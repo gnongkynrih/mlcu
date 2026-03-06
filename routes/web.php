@@ -1,5 +1,5 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
+Route::livewire('/', 'pages::users.index');
 
-Route::view('/', 'welcome')->name('home');
+Route::livewire('/table-management', 'admin.table-management')->name('admin.table-management');
