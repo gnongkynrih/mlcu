@@ -35,3 +35,10 @@ https://mary-ui.com/docs/installation
 //install maryui
 composer require robsontenorio/mary
 php artisan mary:install
+
+//to use toast from maryui
+in the layout file, add this line:
+
+<body>...
+<x-toast />  
+...</body>
