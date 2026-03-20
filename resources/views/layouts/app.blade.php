@@ -54,7 +54,14 @@
                         icon="o-wifi" 
                         link="{{route('admin.table-management')}}" 
                     />
-                    <x-menu-item title="Archives" icon="o-archive-box" link="####" />
+                    <x-menu-item 
+                        title="Category Management" 
+                        icon="o-tag" 
+                        link="{{route('admin.category-management')}}" 
+                    />
+                    <x-menu-item title="Menu Management" 
+                        icon="o-bars-3" 
+                        link="{{route('admin.menu-management')}}" />
                 </x-menu-sub>
             </x-menu>
         </x-slot:sidebar>

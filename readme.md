@@ -42,3 +42,17 @@ in the layout file, add this line:
 <body>...
 <x-toast />  
 ...</body>
+
+//in the model to create the relationship
+hasMany
+belongsTo
+eg in the Category model
+public function menuItems()
+{
+return $this->hasMany(MenuItem::class);
+}
+eg in the MenuItem model
+public function category()
+{
+return $this->belongsTo(Category::class);
+}
