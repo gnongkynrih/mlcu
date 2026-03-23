@@ -4,9 +4,10 @@ use Livewire\Component;
 use Livewire\Attributes\On;
 use App\Models\MenuItem;
 use App\Models\Category;
-
+use Mary\Traits\Toast;
 new class extends Component
 {
+    use Toast;
     // Form properties
     public $menuItemId = null;
     public $category_id = '';
@@ -29,15 +30,17 @@ new class extends Component
     
     protected $rules = [
         'category_id' => 'required|exists:categories,id',
-        'name' => 'required|min:2|max:100',
+        'name' => 'required|min:2|max:50',
         'description' => 'nullable|max:500',
-        'price' => 'required|numeric|min:0|max:999999.99',
+        'price' => 'required|numeric|min:0|max:1999.99',
         'is_available' => 'boolean',
     ];
     
     protected $messages = [
-        'category_id.required' => 'Please select a category.',
+        'category_id.required' => 'Category cannot be blank.',
         'name.required' => 'Item name is required.',
+        'name.min'=>'Name cannot be less than 2 characters.',
+        'name.max'=>'Name cannot be more than 50 characters.',
         'price.required' => 'Price is required.',
         'price.numeric' => 'Price must be a valid number.',
     ];
@@ -86,19 +89,27 @@ new class extends Component
     
     public function save()
     {
+        //validate the form
         $validated = $this->validate();
         
-        if ($this->isEditing) {
+        if ($this->isEditing ==true) {
             $item = MenuItem::findOrFail($this->menuItemId);
             $item->update($validated);
-            session()->flash('message', 'Menu item updated successfully!');
+            $this->toast(
+                type:'success',
+                title:'Menu item updated successfully'
+            );
+            // session()->flash('message', 'Menu item updated successfully!');
         } else {
             MenuItem::create($validated);
-            session()->flash('message', 'Menu item created successfully!');
+            // session()->flash('message', 'Menu item created successfully!');
+            $this->toast(
+                type:'success',
+                title:'Menu item added successfully'
+            );
         }
         
         $this->closeModal();
-        $this->dispatch('menuItemSaved');
     }
     
     public function confirmDelete($id)
@@ -141,15 +152,29 @@ new class extends Component
         session()->flash('message', 'Availability updated!');
     }
     
-    public function with(): array
+    //It is a hook / lifecycle method that lets you return extra data 
+    // that should be automatically passed to the Blade view 
+    // every time the component renders.
+    public function with()
     {
-        $query = MenuItem::with('category')
-            ->when($this->search, fn($q) => $q->where('name', 'like', '%'.$this->search.'%'))
-            ->when($this->filterCategory, fn($q) => $q->where('category_id', $this->filterCategory))
-            ->orderBy($this->sortField, $this->sortDirection);
-            
+        // $query = MenuItem::with('category')
+        //     ->when($this->search, fn($q) => $q->where('name', 'like', '%'.$this->search.'%'))
+        //     ->when($this->filterCategory, fn($q) => $q->where('category_id', $this->filterCategory))
+        //     ->orderBy($this->sortField, $this->sortDirection);
+        
+            $query = MenuItem::with('category');
+            //if user enter in the search text box, filter by name
+            if($this->search){
+                $query = $query->where('name', 'like', '%'.$this->search.'%');
+            }
+            //if user select a category from the filter dropdown, filter by category
+            if($this->filterCategory){
+                $query = $query->where('category_id', $this->filterCategory);
+            }
+            //sort by the selected field
+            $query = $query->orderBy($this->sortField, $this->sortDirection);
         return [
-            'menuItems' => $query->paginate(10),
+            'menuItems' => $query->paginate(5),
             'categories' => Category::all(),
         ];
     }
@@ -158,8 +183,11 @@ new class extends Component
 
 <div class="min-h-screen bg-gray-100 p-6">
     <!-- Flash Messages -->
-    @if (session()->has('message'))
-        <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 3000)" 
+    {{-- @if (session()->has('message'))
+        <div 
+            x-data="{ show: true }" 
+            x-show="show" 
+            x-init="setTimeout(() => show = false, 3000)" 
              class="mb-4 rounded-lg bg-green-50 p-4 text-green-800 border border-green-200 shadow-sm transition-all duration-500" 
              role="alert">
             <div class="flex items-center">
@@ -167,7 +195,7 @@ new class extends Component
                 <span class="font-medium">{{ session('message') }}</span>
             </div>
         </div>
-    @endif
+    @endif --}}
 
     <!-- Header Card -->
     <div class="bg-white rounded-2xl shadow-md border border-gray-100 p-6 mb-4">
@@ -290,9 +318,7 @@ new class extends Component
                         <tr>
                             <td colspan="5" class="px-6 py-12 text-center">
                                 <div class="flex flex-col items-center justify-center text-gray-500">
-                                    <svg class="w-16 h-16 mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                                    </svg>
+                                    <x-icon name="o-face-frown" class="w-16 h-16 mb-4 text-gray-300" />
                                     <p class="text-lg font-medium">No menu items found</p>
                                     <p class="text-sm mt-1">Get started by adding your first menu item</p>
                                     <button wire:click="openModal" class="mt-4 text-blue-600 hover:text-blue-800 font-medium text-sm">
@@ -314,27 +340,10 @@ new class extends Component
     </div>
 
     <!-- Create/Edit Modal -->
-    @if($isOpen)
-        <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-            <div class="flex items-center justify-center min-h-screen p-4 text-center sm:block sm:p-0">
-                <!-- Backdrop -->
-                <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity" aria-hidden="true" wire:click="closeModal"></div>
+        <x-modal wire:model="isOpen" title="Add New Items" class="backdrop-blur">
+            <div class="flex items-center justify-center p-4 text-center sm:block sm:p-0">
                 
                 <div class="relative inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
-                    <!-- Modal Header -->
-                    <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
-                        <div class="flex items-center justify-between">
-                            <h3 class="text-lg font-semibold text-white" id="modal-title">
-                                {{ $isEditing ? 'Edit Menu Item' : 'Add New Menu Item' }}
-                            </h3>
-                            <button wire:click="closeModal" class="text-white/80 hover:text-white transition-colors">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                    
                     <!-- Modal Body -->
                     <div class="px-6 py-6 space-y-5">
                         <!-- Category -->
@@ -406,8 +415,7 @@ new class extends Component
                     </div>
                 </div>
             </div>
-        </div>
-    @endif
+        </x-modal>
 
     <!-- Delete Confirmation Modal -->
     @if($showDeleteModal)
