@@ -56,3 +56,28 @@ public function category()
 {
 return $this->belongsTo(Category::class);
 }
+
+//TO USE ROLE BASE ACCESS
+https://spatie.be/docs/laravel-permission/v7/introduction
+
+1. Install the package
+   composer require spatie/laravel-permission
+2. publish the migration
+   php artisan vendor:publish --provider="Spatie\Permission\PermissionServiceProvider"
+3. run the migration
+   php artisan migrate
+4. Add the HasRoles trait to your User model
+   use Spatie\Permission\Traits\HasRoles;
+
+    use HasRoles;
+
+A Seeder is a special class that populates (seeds) your database with initial or test data.
+
+TO create a seeder
+php artisan make:seeder SeederName
+eg php artisan make:seeder RoleAndPermissionSeeder
+
+To see the role and persmisison created check the file database/seeders/RoleAndPermissionSeeder.php
+
+To run the seeder
+php artisan db:seed --class=RoleAndPermissionSeeder
