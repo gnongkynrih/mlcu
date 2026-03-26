@@ -71,6 +71,22 @@ https://spatie.be/docs/laravel-permission/v7/introduction
 
     use HasRoles;
 
+//TO implement middleware
+You can register their aliases for easy reference elsewhere in your app:
+Open /bootstrap/app.php and register them there:
+->withMiddleware(function (Middleware $middleware): void {
+$middleware->alias([
+'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
+'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
+'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
+]);
+})
+
+in routes/web.php
+Route::middleware(['auth','role:admin'])->group(function () {
+//your routes here
+});
+
 A Seeder is a special class that populates (seeds) your database with initial or test data.
 
 TO create a seeder
