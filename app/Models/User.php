@@ -26,6 +26,11 @@ class User extends Authenticatable
         'password',
     ];
 
+    public function tableSessions()
+    {
+        return $this->hasMany(TableSession::class);
+    }
+    
     /**
      * The attributes that should be hidden for serialization.
      *

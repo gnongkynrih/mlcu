@@ -45,7 +45,8 @@
 
                     <x-menu-separator />
                 @endif
-
+                
+                <x-menu-item title="Take Order" icon="o-shopping-cart" link="{{route('pos.table-selection')}}" />
                 <x-menu-item title="Hello" icon="o-sparkles" link="/" />
                 
                 <x-menu-sub title="Settings" icon="o-cog-6-tooth">
@@ -59,9 +60,16 @@
                         icon="o-tag" 
                         link="{{route('admin.category-management')}}" 
                     />
+                    @can('cashier')
                     <x-menu-item title="Menu Management" 
                         icon="o-bars-3" 
                         link="{{route('admin.menu-management')}}" />
+                    @endcan
+                    @can('admin')
+                        <x-menu-item title="User Management" 
+                        icon="o-users" 
+                        link="{{route('admin.user-management')}}" />
+                    @endcan
                 </x-menu-sub>
             </x-menu>
         </x-slot:sidebar>
