@@ -45,9 +45,9 @@
 
                     <x-menu-separator />
                 @endif
-                
+                <x-menu-item title="Checkout" icon="o-sparkles" link="{{route('pos.checkout')}}" />
                 <x-menu-item title="Take Order" icon="o-shopping-cart" link="{{route('pos.table-selection')}}" />
-                <x-menu-item title="Hello" icon="o-sparkles" link="/" />
+                
                 
                 <x-menu-sub title="Settings" icon="o-cog-6-tooth">
                     <x-menu-item 

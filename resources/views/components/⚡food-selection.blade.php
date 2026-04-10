@@ -32,8 +32,27 @@ new class extends Component
         $this->originalMenus = $this->menus;
         //get the categories
         $this->categories = Category::where('is_active', true)->get();
+
+        //get existing orders
+        $this->getExistingOrders();
     }
 
+    public function getExistingOrders(){
+        $data= Order::with('orderItems')->where('table_session_id', $this->tableSession['table_session_id'])
+            ->where('status', 'pending')
+            ->first();
+        if(!$data) return;
+        
+        foreach($data->orderItems as $orderItem){
+            $this->itemsOrdered[$orderItem->menu_item_id] = [
+                'name' => $orderItem->menuItem->name,
+                'menu_item_id' => $orderItem->menu_item_id,
+                'quantity' => $orderItem->quantity,
+                'unit_price' => $orderItem->unit_price,
+                'line_total' => $orderItem->line_total,
+            ];
+        }
+    }
     public function updatedSearch(){
         
         $this->menus = $this->originalMenus->filter(function($menu) {
