@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 
 
-Route::livewire('/', 'pages::users.index')->middleware('auth'); //needs authentication
+Route::livewire('/', 'test-pdf')->middleware('auth'); //needs authentication
 Route::livewire('/login','login')->name('login');
 Route::get('/logout',function(){
     Auth::logout();
@@ -14,6 +14,8 @@ Route::get('/logout',function(){
 Route::middleware(['auth','role:admin'])->group(function () {
     Route::livewire('/table-management', 'admin.table-management')->name('admin.table-management');
     Route::livewire('/category-management', 'admin.category-management')->name('admin.category-management');
+    Route::livewire('/sales-report', 'reports.sales-report')->name('reports.sales-report');
+    
     
 });
 Route::middleware(['auth','permission:cashier'])->group(function () {

@@ -97,3 +97,7 @@ To see the role and persmisison created check the file database/seeders/RoleAndP
 
 To run the seeder
 php artisan db:seed --class=RoleAndPermissionSeeder
+
+TO GENERATE PDF DOCUMENTS
+https://github.com/barryvdh/laravel-dompdf
+composer require barryvdh/laravel-dompdf

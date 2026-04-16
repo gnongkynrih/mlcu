@@ -71,6 +71,26 @@
                         link="{{route('admin.user-management')}}" />
                     @endcan
                 </x-menu-sub>
+                <x-menu-sub title="Reports" icon="o-chart-pie">
+                    <x-menu-item 
+                        title="Sales Report" 
+                        
+                        link="{{route('reports.sales-report')}}" 
+                    />
+                    <x-menu-item 
+                        title="Category Management" 
+                        link="{{route('admin.category-management')}}" 
+                    />
+                    @can('cashier')
+                    <x-menu-item title="Menu Management" 
+                        link="{{route('admin.menu-management')}}" />
+                    @endcan
+                    @can('admin')
+                        <x-menu-item title="User Management" 
+                        icon="o-users" 
+                        link="{{route('admin.user-management')}}" />
+                    @endcan
+                </x-menu-sub>
             </x-menu>
         </x-slot:sidebar>
 
