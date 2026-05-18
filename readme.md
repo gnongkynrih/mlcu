@@ -101,3 +101,24 @@ php artisan db:seed --class=RoleAndPermissionSeeder
 TO GENERATE PDF DOCUMENTS
 https://github.com/barryvdh/laravel-dompdf
 composer require barryvdh/laravel-dompdf
+
+TO USE RAZOR PAY
+composer require razorpay/razorpay
+
+in the .env file
+RAZOR_KEY=rzp_test_SncpwTrJ7k5Xyp
+RAZOR_SECRET=2PflX6X0MW0fCEc7i1TbzbP7
+Popular Test Cards (Indian Payments)Use any future expiry date and any random CVV (e.g., 123 or 999).Card Network
+Card Number
+
+4111 1111 1111 1111
+Domestic
+Mastercard
+5267 3181 8797 5449
+Domestic
+Mastercard
+5555 5555 5555 4444
+
+After entering card details:Razorpay shows a mock bank page.
+Enter any OTP (4–10 digits) → Success.
+Enter short OTP (less than 4 digits) → Failure.

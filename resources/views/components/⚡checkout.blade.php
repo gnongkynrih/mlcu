@@ -15,6 +15,9 @@ new class extends Component
     public $totalAmount = 0;
     public $isPayNow = false;
     public $paymentMethod = '';
+    public $razorpayOrderId = null;
+    public $razorpayPaymentId = null;
+    public $razorpaySignature = null;
     public function mount(){
         $this->loadTable();
     }
@@ -62,6 +65,61 @@ new class extends Component
         $this->isPayNow = true;
     }
     
+    public function initiateRazorpayPayment(){
+        try {
+            // Create Razorpay order
+            $api = new \Razorpay\Api\Api(env('RAZOR_KEY'), env('RAZOR_SECRET'));
+            
+            $orderData = [
+                'receipt' => 'order_' . $this->selectedOrderId,
+                'amount' => $this->totalAmount * 100, // Amount in paise
+                'currency' => 'INR',
+                'notes' => [
+                    'order_id' => $this->selectedOrderId,
+                    'table_session_id' => $this->selectedTableSessionId,
+                ]
+            ];
+            //generate the order id
+            $razorpayOrder = $api->order->create($orderData);
+            $this->razorpayOrderId = $razorpayOrder['id'];
+            \Log::info('Razorpay order created: ' . $this->razorpayOrderId);
+            // Dispatch browser event to open Razorpay checkout
+            $this->dispatch('openRazorpayUI', 
+                orderId: $this->razorpayOrderId,
+                amount: $this->totalAmount * 100,
+                key: env('RAZOR_KEY')
+            );
+        } catch (\Exception $e) {
+            \Log::error('Razorpay order creation failed: ' . $e->getMessage());
+            session()->flash('error', 'Payment initiation failed. Please try again.');
+        }
+    }
+    
+    public function verifyRazorpayPayment($paymentId, $orderId, $signature){
+        try {
+            $api = new \Razorpay\Api\Api(env('RAZOR_KEY'), env('RAZOR_SECRET'));
+            
+            // Verify signature
+            $attributes = [
+                'razorpay_order_id' => $orderId,
+                'razorpay_payment_id' => $paymentId,
+                'razorpay_signature' => $signature
+            ];
+            
+            $api->utility->verifyPaymentSignature($attributes);
+            
+            // Payment verified, update order
+            $this->razorpayPaymentId = $paymentId;
+            $this->razorpaySignature = $signature;
+            $this->paymentMethod = 'online';
+            $this->confirmPayment();
+            
+        } catch (\Exception $e) {
+            \Log::error('Razorpay payment verification failed: ' . $e->getMessage());
+            session()->flash('error', 'Payment verification failed.');
+        }
+    }
+    
     public function confirmPayment(){
         // Validate payment method is selected
         if (!$this->paymentMethod) {
@@ -76,7 +134,11 @@ new class extends Component
             $order->status = 'paid';
             $order->discount = $this->discount;
             $order->total = $this->totalAmount;
-            // $order->payment_method = $this->paymentMethod;
+            $order->payment_method = $this->paymentMethod;
+            if ($this->razorpayPaymentId) {
+                $order->razorpay_payment_id = $this->razorpayPaymentId;
+                $order->razorpay_order_id = $this->razorpayOrderId;
+            }
             $order->save();
 
             //update the order items
@@ -286,14 +348,91 @@ new class extends Component
                     />
                     <x-button 
                         label="Continue" 
-                        wire:click="confirmPayment" 
+                        wire:click="{{ $paymentMethod === 'online' ? 'initiateRazorpayPayment' : 'confirmPayment' }}" 
                         class="flex-1 btn-primary {{ !$paymentMethod ? 'opacity-50 cursor-not-allowed' : '' }}"
                         icon="o-arrow-right"
                         :disabled="!$paymentMethod"
-                        spinner="confirmPayment"
+                        spinner="{{ $paymentMethod === 'online' ? 'initiateRazorpayPayment' : 'confirmPayment' }}"
                     />
                 </div>
             </div>
         @endif
     </x-modal>
 </div>
+
+@script
+<script>
+    // Load Razorpay SDK if not already loaded
+    if (typeof Razorpay === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        script.async = true;
+        document.head.appendChild(script);
+        console.log('Loading Razorpay SDK...');
+    }
+    
+    $wire.on('openRazorpayUI', (data) => {
+         if (!data.orderId || !data.key) {
+            console.error('Missing required Razorpay data');
+            return;
+        }
+        
+        // Function to open Razorpay
+        const openRazorpay = () => {
+            const options = {
+                "key": data.key,
+                "amount": data.amount,
+                "currency": "INR",
+                "name": "{{ config('app.name') }}",
+                "description": "Order Payment",
+                "order_id": data.orderId,
+                "handler": function (response) {
+                    console.log('Payment successful:', response);
+                    // Payment successful
+                    $wire.call('verifyRazorpayPayment', 
+                        response.razorpay_payment_id,
+                        response.razorpay_order_id,
+                        response.razorpay_signature
+                    );
+                },
+                "prefill": {
+                    "name": "{{ auth()->user()->name ?? '' }}",
+                    "email": "{{ auth()->user()->email ?? '' }}",
+                },
+                "theme": {
+                    "color": "#766555"
+                },
+                "modal": {
+                    "ondismiss": function() {
+                        console.log('Payment cancelled by user');
+                    }
+                }
+            };
+            
+            console.log('Opening Razorpay with options:', options);
+            const rzp = new Razorpay(options);
+            rzp.open();
+        };
+        
+        // Check if Razorpay is loaded, if not wait for it
+        if (typeof Razorpay === 'undefined') {
+            console.log('Waiting for Razorpay SDK to load...');
+            let attempts = 0;
+            const checkRazorpay = setInterval(() => {
+                attempts++;
+                if (typeof Razorpay !== 'undefined') {
+                    console.log('Razorpay SDK loaded successfully');
+                    clearInterval(checkRazorpay);
+                    openRazorpay();
+                } else if (attempts > 20) {
+                    console.error('Razorpay SDK failed to load after 10 seconds');
+                    clearInterval(checkRazorpay);
+                    alert('Payment gateway not available. Please refresh the page.');
+                }
+            }, 500);
+        } else {
+            openRazorpay();
+        }
+    });
+</script>
+@endscript

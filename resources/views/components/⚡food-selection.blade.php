@@ -121,6 +121,17 @@ new class extends Component
             if ($quantity <= 0) {
                 unset($this->itemsOrdered[$menuId]);
             } else {
+                // Ensure all required keys exist, fetch from database if missing
+                if (!isset($this->itemsOrdered[$menuId]['unit_price']) || 
+                    !isset($this->itemsOrdered[$menuId]['name']) || 
+                    !isset($this->itemsOrdered[$menuId]['menu_item_id'])) {
+                    $menu = MenuItem::find($menuId);
+                    if ($menu) {
+                        $this->itemsOrdered[$menuId]['name'] = $menu->name;
+                        $this->itemsOrdered[$menuId]['menu_item_id'] = $menuId;
+                        $this->itemsOrdered[$menuId]['unit_price'] = $menu->price;
+                    }
+                }
                 $this->itemsOrdered[$menuId]['line_total'] = $this->itemsOrdered[$menuId]['unit_price'] * $quantity;
             }
         }

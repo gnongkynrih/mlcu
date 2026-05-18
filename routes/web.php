@@ -18,7 +18,7 @@ Route::middleware(['auth','role:admin'])->group(function () {
     
     
 });
-Route::middleware(['auth','permission:cashier'])->group(function () {
+Route::middleware(['auth','permission:waiter'])->group(function () {
     Route::livewire('/menu-management', 'admin.menu-management')->name('admin.menu-management');
     Route::livewire('/checkout', 'checkout')->name('pos.checkout');
 });
